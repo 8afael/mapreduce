@@ -42,19 +42,7 @@ Os resumos aparecem no terminal, e os resultados completos ficam em `salida_metr
 
 ---
 
-## 4. Métricas disponíveis
-
-Os resumos usam os anos completos **2023, 2024 e 2025** (constante `ANIOS_COMPLETOS` em `main.py`). Os arquivos em `salida_metricas/` contêm **todos** os anos.
-
-| Métrica         | Pergunta que responde                                         | Colunas em `salida_metricas/<métrica>/part-*` (separadas por tab) |
-|-----------------|---------------------------------------------------------------|---------------------------------------------------------------------|
-| `lluvia`        | Quanto chove em cada região?                                  | região, ano, mm/dia médio, % de dias com chuva (≥ 1 mm), máximo diário (mm), nº obs |
-| `dias_extremos` | Com que frequência faz calor extremo ou geada?                | região, ano, % dias com tmax ≥ 35 °C, % dias com tmin ≤ 0 °C, nº obs |
-| `temperatura`   | Qual a temperatura média de cada região e da Espanha?         | região, ano, tmed, média das máximas, média das mínimas, soma tmed, soma tmax, soma tmin, nº obs |
-| `records`       | Qual região atingiu a temperatura mais alta e a mais baixa, e quando? | região, ano, tmax recorde, data, estação, tmin recorde, data, estação |
-
-
-## 5. Como funciona (MapReduce)
+## 4. Como funciona (MapReduce)
 
 clima_espanha.csv
    │  sc.textFile + filtro do cabeçalho
@@ -71,7 +59,7 @@ saveAsTextFile        → salida_metricas/X/part-0000*
 resumen_X             → lê os part-*, filtra 2023-2025 e imprime a tabela
 
 
-## 6. Como adicionar uma nova métrica
+## 5. Como adicionar uma nova métrica
 
 1. **`mapper.py`**: crie `map_X(r)`, que recebe `r = (data, estação, região, valores)` e devolve `[(chave, valor)]`, ou `[]` para descartar o registro.
 2. **`reducer.py`**: crie `reduce_X(a, b)` ou reaproveite `reduce_suma`. O reducer **precisa ser associativo e comutativo**, porque o Spark combina os valores em qualquer ordem:
