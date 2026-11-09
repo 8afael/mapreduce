@@ -1,0 +1,17 @@
+services:
+  clima-spark:
+    build: .
+    image: pyspark-clima
+    volumes:
+      # Sincroniza a pasta atual com o contêiner para você editar os códigos no Mac e rodar no Docker
+      - .:/app
+    working_dir: /app
+    environment:
+      - PYTHONUNBUFFERED=1
+    # Tudo o que vier depois do nome do serviço vira argumento do main.py:
+    #   docker compose run --rm clima-spark temperatura records
+    entrypoint: ["python", "main.py"]
+    command: []   # sem argumentos = todas as métricas
+    #command: spark-submit main.py dias_extremos
+    #command: python main.py temperatura
+    #command: python main.py temperatura records

@@ -1,0 +1,4 @@
+salida_metricas/
+*.csv
+__pycache__/
+.git/
