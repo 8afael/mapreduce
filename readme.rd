@@ -20,60 +20,15 @@ projeto/
 └── salida_metricas/     # criada automaticamente com os resultados
 ```
 
-### Formato esperado dos dados
-
-**`clima_espanha.csv`**: separado por vírgula, com cabeçalho. As colunas usadas são:
-
-| coluna          | conteúdo                            |
-|-----------------|-------------------------------------|
-| `date`          | data no formato `AAAA-MM-DD`        |
-| `site`          | identificador da estação            |
-| `temp_max`      | temperatura máxima do dia (°C)      |
-| `temp_min`      | temperatura mínima do dia (°C)      |
-| `precipitation` | precipitação do dia (mm)            |
-
-A ordem das colunas não importa, porque o código localiza cada uma pelo nome no cabeçalho. Valores vazios ou inválidos são ignorados.
-
-**`estaciones.csv`**: com cabeçalho e as colunas `site` e `region`. Só as estações listadas aqui entram no cálculo.
-
----
-
-## 2. Pré-requisitos
-
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado e **aberto**
-- Um `requirements.txt` com o PySpark:
-
-  ```
-  pyspark>=4.0
-  ```
-
-  > A imagem usa Java 21, que tem suporte oficial a partir do Spark 4.
-
----
-
-## 3. Passo a passo
-
-### Passo 1: coloque os arquivos na mesma pasta
-
-Todos os arquivos da seção 1 devem estar na mesma pasta, incluindo os dois CSVs.
-
-### Passo 2: abra o terminal na pasta do projeto
-
-```bash
+Para executar:
 cd caminho/para/projeto
-```
 
-### Passo 3: construa a imagem (só na primeira vez)
-
-```bash
+Construa a imagem (só na primeira vez)
 docker compose build
-```
 
-Repita este passo **apenas** se alterar o `Dockerfile` ou o `requirements.txt`. Alterações em `main.py`, `mapper.py` e `reducer.py` **não** exigem rebuild, porque a pasta é montada como volume no container.
+Repita os passos acima somente se alterar o `Dockerfile` ou o `requirements.txt`. Alterações em `main.py`, `mapper.py` e `reducer.py` **não** exigem rebuild, porque a pasta é montada como volume no container.
 
-### Passo 4: execute as métricas
-
-```bash
+Execute as métricas
 # todas as métricas
 docker compose run --rm clima-spark
 
@@ -82,7 +37,6 @@ docker compose run --rm clima-spark temperatura
 
 # várias métricas
 docker compose run --rm clima-spark temperatura records
-```
 
 Os resumos aparecem no terminal, e os resultados completos ficam em `salida_metricas/<métrica>/`.
 
@@ -99,19 +53,9 @@ Os resumos usam os anos completos **2023, 2024 e 2025** (constante `ANIOS_COMPLE
 | `temperatura`   | Qual a temperatura média de cada região e da Espanha?         | região, ano, tmed, média das máximas, média das mínimas, soma tmed, soma tmax, soma tmin, nº obs |
 | `records`       | Qual região atingiu a temperatura mais alta e a mais baixa, e quando? | região, ano, tmax recorde, data, estação, tmin recorde, data, estação |
 
-### Observações de interpretação
-
-- **Temperatura média diária** = `(temp_max + temp_min) / 2`, uma aproximação usual. Ela costuma ficar um pouco acima da média real de 24 h.
-- **Linha "ESPAÑA"** em `temperatura`: soma todas as estações, então regiões com mais estações pesam mais.
-- **"Fez mais calor"** pode ter dois sentidos. O recorde absoluto está em `records`. A região mais quente em geral é a de maior "Media" em `temperatura`.
-- A coluna **nº obs** indica quantos dias-estação entraram no cálculo. Valores baixos indicam um ano incompleto ou com falhas.
-- Registros com `temp_max < temp_min` ou precipitação negativa são descartados como erro de medição.
-
----
 
 ## 5. Como funciona (MapReduce)
 
-```
 clima_espanha.csv
    │  sc.textFile + filtro do cabeçalho
    ▼
@@ -125,9 +69,7 @@ reduceByKey(reduce_X) → ((região, ano), valor agregado)   [2 reducers]
 saveAsTextFile        → salida_metricas/X/part-0000*
    ▼
 resumen_X             → lê os part-*, filtra 2023-2025 e imprime a tabela
-```
 
----
 
 ## 6. Como adicionar uma nova métrica
 
@@ -140,33 +82,3 @@ resumen_X             → lê os part-*, filtra 2023-2025 e imprime a tabela
    - crie `resumen_X()`, que lê com `leer("X")`;
    - registre a métrica em `METRICAS`: `"X": (metrica_X, resumen_X)`.
 4. Execute: `docker compose run --rm clima-spark X`
-
----
-
-## 7. Comandos úteis
-
-```bash
-# abrir um terminal dentro do container
-docker compose run --rm --entrypoint bash clima-spark
-
-# ver o resultado bruto de uma métrica
-cat salida_metricas/temperatura/part-*
-
-# reconstruir a imagem do zero
-docker compose build --no-cache
-```
-
----
-
-## 8. Solução de problemas
-
-| Sintoma | Causa provável / solução |
-|---------|--------------------------|
-| `Cannot connect to the Docker daemon` | O Docker Desktop não está aberto. |
-| `service ... has neither an image nor a build context` | Há um serviço no `docker-compose.yml` sem `build:`. Deve existir só o serviço `clima-spark`. |
-| `FileNotFoundError: estaciones.csv` / `clima_espanha.csv` | O comando não foi executado na pasta do projeto, ou os CSVs não estão nela. |
-| `Métricas desconocidas: ...` | Nome de métrica errado. Use `lluvia`, `dias_extremos`, `temperatura` ou `records`. |
-| `JAVA_HOME is not set` / `Java gateway process exited` | Refaça a imagem com `docker compose build --no-cache`. |
-| `OutOfMemoryError` ou o container encerra sem mensagem | Aumente a memória em Docker Desktop → Settings → Resources. |
-| Resumo vazio para uma métrica | Ela ainda não foi executada, ou não há dados de 2023-2025 para as estações de `estaciones.csv`. |
-| Alterei o código e nada mudou | Confira se o volume `.:/app` está no `docker-compose.yml`. |
